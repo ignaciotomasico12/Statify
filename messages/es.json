@@ -1,0 +1,20 @@
+{
+    "auth": {
+        "signIn": {
+            "pageTitle": "Iniciar sesión con Spotify",
+            "signInButton": "Iniciar sesión"
+        }
+    },
+    "app":{
+        "layout":{
+            "header":{
+                "profile":{
+                    "menu":{
+                        "profile": "Perfil",
+                        "logOut": "Cerrar sesión"
+                    }
+                }
+            }
+        }
+    }
+}

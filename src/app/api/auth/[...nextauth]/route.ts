@@ -1,3 +1,4 @@
+import { getCurrentUserProfile } from "@/services/users";
 import { ExtendedSession, ExtendedToken } from "@/types/auth/auth";
 import NextAuth, { NextAuthOptions } from "next-auth";
 import SpotifyProvider from "next-auth/providers/spotify";
@@ -44,72 +45,76 @@ async function refreshAccessToken(token: ExtendedToken): Promise<ExtendedToken> 
 }
 
 const authOptions: NextAuthOptions = {
-    providers: [
-        SpotifyProvider({
-        clientId: SPOTIFY_CLIENT_ID,
-        clientSecret: SPOTIFY_CLIENT_SECRET,
-        authorization: {
-            url: "https://accounts.spotify.com/authorize",
-            params: {
-            scope: "user-read-email user-read-private user-top-read user-follow-read",
-            redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
-            },
+  providers: [
+    SpotifyProvider({
+      clientId: SPOTIFY_CLIENT_ID,
+      clientSecret: SPOTIFY_CLIENT_SECRET,
+      authorization: {
+        url: "https://accounts.spotify.com/authorize",
+        params: {
+          scope: "user-read-email user-read-private user-top-read user-follow-read",
+          redirect_uri: process.env.SPOTIFY_REDIRECT_URI
         },
-        }),
-    ],
-    secret: process.env.NEXTAUTH_SECRET || "",
-    session: {
-        strategy: "jwt",
+      }
+    }),
+  ],
+  secret: process.env.NEXTAUTH_SECRET || "",
+  session: {
+    strategy: "jwt",
+  },
+  cookies: {
+    sessionToken: {
+      name: "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+      },
     },
-    cookies: {
-        sessionToken: {
-            name: "next-auth.session-token",
-            options: {
-                httpOnly: true,
-                sameSite: "lax",
-                path: "/",
-            },
-        },
-    },
-    callbacks: {
-        async jwt({ token, account, user }) {
-            let extendedToken: ExtendedToken = token as ExtendedToken;
-            if (account && user) {
-                extendedToken = {
-                    accessToken: account.access_token!,
-                    refreshToken: account.refresh_token!,
-                    accessTokenExpires: Date.now() + (account.expires_in as number) * 1000,
-                    user: user
-                };
-                return extendedToken;
-            }
+  },
+  callbacks: {
+    async jwt({ token, account, user }) {
+      let extendedToken: ExtendedToken = token as ExtendedToken;
+      if (account && user) {
+        extendedToken = {
+          accessToken: account.access_token!,
+          refreshToken: account.refresh_token!,
+          accessTokenExpires: Date.now() + (account.expires_in as number) * 1000,
+          user: user
+        };
+        return extendedToken;
+      }
 
-            if (Date.now() < extendedToken.accessTokenExpires) {
-                return extendedToken;
-            }
-            return await refreshAccessToken(extendedToken);
-        },
-        async session({ session, token }) {
-            const extendedToken = token as ExtendedToken;
-            const extendedSession: ExtendedSession = {
-                ...session,
-                accessToken: extendedToken.accessToken,
-                error: extendedToken.error,
-                user: extendedToken.user
-                
-            };
-            return extendedSession;
-        },
-        async redirect({ baseUrl }) {
-            return baseUrl;
-        }
+      if (Date.now() < extendedToken.accessTokenExpires) {
+        return extendedToken;
+      }
+      return await refreshAccessToken(extendedToken);
     },
-    pages: {
-        signIn: "/auth/signin",
-        signOut: "/auth/signin",
+    async session({ session, token }) {
+      const extendedToken = token as ExtendedToken;
+      const userProfile = await getCurrentUserProfile(extendedToken.accessToken as string)
+      const extendedSession: ExtendedSession = {
+        ...session,
+        accessToken: extendedToken.accessToken,
+        error: extendedToken.error,
+        user: {
+          ...extendedToken.user,
+          locale: userProfile.country.toLowerCase()
+        }
+      };
+      return extendedSession;
+    },
+    async redirect({ baseUrl }) {
+      return baseUrl;
     }
+  },
+  pages: {
+    signIn: "/auth/signin",
+    signOut: "/auth/signin",
+  }
 };
 
 const handler = NextAuth(authOptions);
 
+export { authOptions };
 export { handler as GET, handler as POST };

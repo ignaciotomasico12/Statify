@@ -8,8 +8,11 @@ export interface ExtendedToken extends JWT {
     user?: Session["user"];
     error?: string;
 }
+
 export interface ExtendedSession extends Session {
     accessToken?: string;
-    user?: Session["user"];
+    user?: Session["user"]  & {
+        locale?: string
+    }
     error?: string;
 }

@@ -1,0 +1,20 @@
+{
+    "auth": {
+        "signIn": {
+            "pageTitle": "Log in with Spotify",
+            "signInButton": "Log In"
+        }
+    },
+    "app":{
+        "layout":{
+            "header":{
+                "profile":{
+                    "menu":{
+                        "profile": "Profile",
+                        "logOut": "Log Out"
+                    }
+                }
+            }
+        }
+    }
+}
